@@ -4,18 +4,13 @@ A 2D top-down action RPG built in Java (Swing / Java2D). You wake up in Dreambou
 
 ## Screenshots
 
-<!--
-Drop your images in a `screenshots/` folder at the repo root, then reference
-them below like this:
+<img width="985" height="726" alt="image" src="https://github.com/user-attachments/assets/79defa2a-4adc-4b04-b296-ef2fbc82dd58" />
 
-![Village Outskirts](screenshots/village.png)
-![Boss fight](screenshots/raku-boss.png)
-![Dialogue box](screenshots/dialogue.png)
+<img width="980" height="731" alt="image" src="https://github.com/user-attachments/assets/5cafa25c-5e79-4594-a3ec-89c17ba9812b" />
 
-GitHub renders these automatically once the images and this README are both
-pushed - no extra setup needed.
--->
+<img width="877" height="202" alt="image" src="https://github.com/user-attachments/assets/8ac89fc6-5ac8-4fb7-aace-0956be01f986" />
 
+<img width="976" height="687" alt="image" src="https://github.com/user-attachments/assets/fdeac2ae-ab13-4cb9-b679-f9fa05a79214" />
 
 
 ## Features
