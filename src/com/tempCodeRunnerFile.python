@@ -1,0 +1,197 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# ============================================
+# STEP 1: LOAD AND INITIAL EXPLORATION
+# ============================================
+
+# Load the dataset
+df = pd.read_csv('chenglaputa_healtha_june.csv')
+
+# Basic information
+print("=" * 60)
+print("DATASET OVERVIEW")
+print("=" * 60)
+print(f"Shape: {df.shape[0]} rows × {df.shape[1]} columns\n")
+print("Column Names and Data Types:")
+print(df.dtypes)
+print("\nFirst few rows:")
+print(df.head())
+
+# ============================================
+# STEP 2: DATA QUALITY CHECKS
+# ============================================
+
+print("\n" + "=" * 60)
+print("DATA QUALITY ANALYSIS")
+print("=" * 60)
+
+# Missing values
+print("\n1. Missing Values:")
+missing_data = df.isnull().sum()
+missing_percent = (df.isnull().sum() / len(df)) * 100
+missing_df = pd.DataFrame({
+    'Missing_Count': missing_data,
+    'Percentage': missing_percent
+})
+print(missing_df[missing_df['Missing_Count'] > 0])
+if missing_df['Missing_Count'].sum() == 0:
+    print("   ✓ No missing values found!")
+
+# Duplicate rows
+print(f"\n2. Duplicate Rows: {df.duplicated().sum()}")
+
+# Unique values
+print("\n3. Unique Values per Column:")
+for col in df.columns:
+    print(f"   {col}: {df[col].nunique()} unique values")
+
+# ============================================
+# STEP 3: STATISTICAL SUMMARY
+# ============================================
+
+print("\n" + "=" * 60)
+print("STATISTICAL SUMMARY")
+print("=" * 60)
+print(df.describe())
+
+# Check for negative values
+print("\n4. Checking for negative values:")
+numeric_cols = ['ReportedValueforPublicFacility', 'ReportedValueforPrivateFacility', 
+                'ReportedValueforRural', 'ReportedValueforUrban']
+for col in numeric_cols:
+    neg_count = (df[col] < 0).sum()
+    print(f"   {col}: {neg_count} negative values")
+
+# Check for zeros
+print("\n5. Percentage of zero values:")
+for col in numeric_cols:
+    zero_percent = (df[col] == 0).sum() / len(df) * 100
+    print(f"   {col}: {zero_percent:.2f}%")
+
+# ============================================
+# STEP 4: CATEGORICAL ANALYSIS
+# ============================================
+
+print("\n" + "=" * 60)
+print("CATEGORICAL DATA ANALYSIS")
+print("=" * 60)
+
+print("\n1. SubDistricts Distribution:")
+print(df['SubDistrict'].value_counts())
+
+print("\n2. Health Modules (CodeSections):")
+print(df['CodeSection'].value_counts())
+
+print("\n3. Top 10 Health Indicators:")
+print(df['IndicatorName'].value_counts().head(10))
+
+# ============================================
+# STEP 5: DATA CLEANING
+# ============================================
+
+print("\n" + "=" * 60)
+print("DATA CLEANING PROCESS")
+print("=" * 60)
+
+# Create cleaned dataframe
+df_cleaned = df.copy()
+
+# 1. Convert date to proper format
+print("\n1. Converting date format...")
+df_cleaned['DataGovUpdateDate'] = pd.to_datetime(df_cleaned['DataGovUpdateDate'], 
+                                                  format='%d-%m-%Y')
+print("   ✓ Date converted to datetime format")
+
+# 2. Strip whitespaces from text columns
+print("\n2. Cleaning text columns...")
+text_columns = ['StateUT', 'District', 'SubDistrict', 'FinancialYear', 
+                'Month', 'IndicatorCode', 'IndicatorName', 'CodeSection']
+for col in text_columns:
+    df_cleaned[col] = df_cleaned[col].str.strip()
+print("   ✓ Removed leading/trailing whitespaces")
+
+# 3. Create derived columns
+print("\n3. Creating derived columns...")
+df_cleaned['TotalReportedValue'] = (df_cleaned['ReportedValueforPublicFacility'] + 
+                                    df_cleaned['ReportedValueforPrivateFacility'])
+df_cleaned['TotalRuralUrbanValue'] = (df_cleaned['ReportedValueforRural'] + 
+                                      df_cleaned['ReportedValueforUrban'])
+df_cleaned['PercentagePublicFacility'] = (df_cleaned['ReportedValueforPublicFacility'] / 
+                                          df_cleaned['TotalReportedValue'] * 100).fillna(0)
+df_cleaned['PercentageRural'] = (df_cleaned['ReportedValueforRural'] / 
+                                 df_cleaned['TotalRuralUrbanValue'] * 100).fillna(0)
+print("   ✓ Added TotalReportedValue column")
+print("   ✓ Added TotalRuralUrbanValue column")
+print("   ✓ Added PercentagePublicFacility column")
+print("   ✓ Added PercentageRural column")
+
+# 4. Check data consistency
+print("\n4. Data Consistency Check:")
+df_cleaned['ValueDifference'] = (df_cleaned['TotalReportedValue'] - 
+                                 df_cleaned['TotalRuralUrbanValue'])
+inconsistent = df_cleaned[df_cleaned['ValueDifference'] != 0]
+print(f"   Rows with inconsistent totals: {len(inconsistent)} ({len(inconsistent)/len(df_cleaned)*100:.2f}%)")
+
+# 5. Extract module code from CodeSection
+print("\n5. Creating simplified module codes...")
+df_cleaned['ModuleCode'] = df_cleaned['CodeSection'].str.extract(r'(M\d+)', expand=False)
+print("   ✓ Extracted module codes (M1, M2, etc.)")
+
+# ============================================
+# STEP 6: SAVE CLEANED DATA
+# ============================================
+
+print("\n" + "=" * 60)
+print("SAVING CLEANED DATA")
+print("=" * 60)
+
+# Save cleaned dataset
+df_cleaned.to_csv('chengalpattu_health_cleaned.csv', index=False)
+print(f"✓ Cleaned dataset saved as 'chengalpattu_health_cleaned.csv'")
+print(f"  Final shape: {df_cleaned.shape}")
+
+# ============================================
+# STEP 7: SUMMARY ANALYSIS
+# ============================================
+
+print("\n" + "=" * 60)
+print("SUMMARY ANALYSIS")
+print("=" * 60)
+
+# Summary by SubDistrict
+print("\n1. Total health services by SubDistrict:")
+subdistrict_summary = df_cleaned.groupby('SubDistrict').agg({
+    'TotalReportedValue': 'sum',
+    'ReportedValueforPublicFacility': 'sum',
+    'ReportedValueforPrivateFacility': 'sum'
+}).sort_values('TotalReportedValue', ascending=False)
+print(subdistrict_summary)
+
+# Summary by Health Module
+print("\n2. Total services by Health Module:")
+module_summary = df_cleaned.groupby('CodeSection').agg({
+    'TotalReportedValue': 'sum'
+}).sort_values('TotalReportedValue', ascending=False)
+print(module_summary.head(10))
+
+# Rural vs Urban distribution
+print("\n3. Rural vs Urban Health Services:")
+print(f"   Total Rural Services: {df_cleaned['ReportedValueforRural'].sum():,}")
+print(f"   Total Urban Services: {df_cleaned['ReportedValueforUrban'].sum():,}")
+print(f"   Rural Percentage: {df_cleaned['ReportedValueforRural'].sum() / df_cleaned['TotalRuralUrbanValue'].sum() * 100:.2f}%")
+print(f"   Urban Percentage: {df_cleaned['ReportedValueforUrban'].sum() / df_cleaned['TotalRuralUrbanValue'].sum() * 100:.2f}%")
+
+# Public vs Private distribution
+print("\n4. Public vs Private Facility Services:")
+print(f"   Total Public Facility: {df_cleaned['ReportedValueforPublicFacility'].sum():,}")
+print(f"   Total Private Facility: {df_cleaned['ReportedValueforPrivateFacility'].sum():,}")
+public_pct = df_cleaned['ReportedValueforPublicFacility'].sum() / df_cleaned['TotalReportedValue'].sum() * 100
+print(f"   Public Percentage: {public_pct:.2f}%")
+print(f"   Private Percentage: {100 - public_pct:.2f}%")
+
+print("\n" + "=" * 60)
+print("DATA EXPLORATION & CLEANING COMPLETE!")
+print("=" * 60)
